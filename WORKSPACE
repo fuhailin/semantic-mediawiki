@@ -25,15 +25,13 @@ container_deps()
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 
-
 # Pull MediaWiki base container.
 # NOTE: This must be pinned to a particular release to satisfy Semantic MediaWiki compatibility, see:
 # https://www.semantic-mediawiki.org/wiki/Help:Compatibility
 
 container_pull(
     name = "mediawiki-linux-amd64",
+    digest = "sha256:331a8c35a19830862e4a84e924fa5830d9ce41b4ae671d9cd2f0c16307d4b31b",  # mediawiki:1.37.1, linux/amd64
     registry = "index.docker.io",
     repository = "library/mediawiki",
-    digest = "sha256:331a8c35a19830862e4a84e924fa5830d9ce41b4ae671d9cd2f0c16307d4b31b" # mediawiki:1.37.1, linux/amd64
 )
-

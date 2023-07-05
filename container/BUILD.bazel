@@ -1,4 +1,4 @@
-package(default_visibility=["//visibility:public"])
+package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 load("@io_bazel_rules_docker//contrib:test.bzl", "container_test")
@@ -7,23 +7,22 @@ load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit")
 # Semantic MediaWiki set-up
 container_run_and_commit(
     name = "installs",
-    image = "@mediawiki-linux-amd64//image",
     # Install pre-reqs: https://www.semantic-mediawiki.org/wiki/Help:Installation#Environment
     # Install Composer and deps: https://www.semantic-mediawiki.org/wiki/Help:Using_Composer
     # Install Semantic MediaWiki using Composer: https://www.semantic-mediawiki.org/wiki/Help:Installation/Using_Composer_with_MediaWiki_1.25%2B
-    commands = [ 
-	"apt-get update",
-	"apt-get install libpcre3=2:8.39-13", 
-	"apt-get install unzip=6.0-26 zip=3.0-12", 
-	"curl -sS https://getcomposer.org/installer | php",
-	"php composer.phar self-update 2.1.14", # Pin composer version
-	"php composer.phar install", # Install Composer deps
-	"echo {} > composer.local.json", # Require Semantic MediaWiki locally, so we don't conflict with base MediaWiki's deps
-	"COMPOSER=composer.local.json php composer.phar require --no-update mediawiki/semantic-media-wiki:4.0.0",
-	"php composer.phar update -n --no-dev", # Update w/ deps; suppress interactive prompts
+    commands = [
+        "apt-get update",
+        "apt-get install libpcre3=2:8.39-13",
+        "apt-get install unzip=6.0-26 zip=3.0-12",
+        "curl -sS https://getcomposer.org/installer | php",
+        "php composer.phar self-update 2.1.14",  # Pin composer version
+        "php composer.phar install",  # Install Composer deps
+        "echo {} > composer.local.json",  # Require Semantic MediaWiki locally, so we don't conflict with base MediaWiki's deps
+        "COMPOSER=composer.local.json php composer.phar require --no-update mediawiki/semantic-media-wiki:4.0.0",
+        "php composer.phar update -n --no-dev",  # Update w/ deps; suppress interactive prompts
     ],
+    image = "@mediawiki-linux-amd64//image",
 )
-
 
 # Wiki container to release
 
@@ -37,22 +36,22 @@ container_image(
 
 container_run_and_commit(
     name = "test-setup",
-    image = ":release-container.tar",
-    commands = [ 
-	# Run an install of MediaWiki.
-	# Bazel creates a bunch of root-owned containers that we have to manually chown back to a user:group 
-	# that lets the Docker host access test SQLite files
-	"php maintenance/install.php my_wiki admin --dbname my_wiki --pass a-nice-password --dbtype sqlite --server 'http://localhost:8080' --scriptpath '' ",
-	"chown www-data:www-data data data/*",
-	# Enable Semantic MediaWiki and then update MediaWiki to deal with the upgrade
-	"echo 'wfLoadExtension(<<<END' >> LocalSettings.php",
-	"echo 'SemanticMediaWiki' >> LocalSettings.php",
-	"echo 'END);' >> LocalSettings.php",
-	"echo 'enableSemantics();' >> LocalSettings.php",
-	"php maintenance/update.php",
-	# Enable testing by installing dev deps
-	"php composer.phar install --dev",
+    commands = [
+        # Run an install of MediaWiki.
+        # Bazel creates a bunch of root-owned containers that we have to manually chown back to a user:group
+        # that lets the Docker host access test SQLite files
+        "php maintenance/install.php my_wiki admin --dbname my_wiki --pass a-nice-password --dbtype sqlite --server 'http://localhost:8080' --scriptpath '' ",
+        "chown www-data:www-data data data/*",
+        # Enable Semantic MediaWiki and then update MediaWiki to deal with the upgrade
+        "echo 'wfLoadExtension(<<<END' >> LocalSettings.php",
+        "echo 'SemanticMediaWiki' >> LocalSettings.php",
+        "echo 'END);' >> LocalSettings.php",
+        "echo 'enableSemantics();' >> LocalSettings.php",
+        "php maintenance/update.php",
+        # Enable testing by installing dev deps
+        "php composer.phar install --dev",
     ],
+    image = ":release-container.tar",
 )
 
 container_image(
@@ -63,8 +62,8 @@ container_image(
 container_test(
     name = "test",
     configs = [
-	"tests/requirements.yaml",
-	"tests/semantics_enabled.yaml",
+        "tests/requirements.yaml",
+        "tests/semantics_enabled.yaml",
     ],
     image = ":test-container",
 )
@@ -73,32 +72,32 @@ container_test(
 
 container_push(
     name = "release",
+    format = "Docker",
     image = ":release-container",
     registry = "index.docker.io",
     repository = "naimkabir/semantic-mediawiki",
-    tag = "4.0.0",
     skip_unchanged_digest = True,
-    format = "Docker",
+    tag = "4.0.0",
 )
 
 container_push(
     name = "release-latest",
+    format = "Docker",
     image = ":release-container",
     registry = "index.docker.io",
     repository = "naimkabir/semantic-mediawiki",
-    tag = "latest",
     skip_unchanged_digest = True,
-    format = "Docker",
+    tag = "latest",
 )
 
 # Also release a pre-configured Demo container so people can just play around
 
 container_push(
     name = "demo",
+    format = "Docker",
     image = ":test-container",
     registry = "index.docker.io",
     repository = "naimkabir/semantic-mediawiki",
-    tag = "demo",
     skip_unchanged_digest = True,
-    format = "Docker",
+    tag = "demo",
 )
